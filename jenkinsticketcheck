@@ -1,0 +1,41 @@
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+def jiraEndpoint = "https://your-jira-instance.com/rest/api/2/issue/JIRA-TICKET-KEY"
+
+// Define your Jira credentials (username and API token)
+def jiraUsername = "B0299451"
+def jiraApiToken = "your-jira-api-token"
+
+// Function to check if a Jira ticket exists
+def checkJiraTicket() {
+    try {
+        def response = sh(script: """
+            curl -s -u ${B0299451}:${jiraApiToken} ${jiraEndpoint}
+        """, returnStatus: true, returnStdout: true)
+        
+        if (response == 0) {
+            return true // Jira ticket exists
+        } else {
+            return false // Jira ticket does not exist
+        }
+    } catch (Exception e) {
+        return false // An error occurred, assume the Jira ticket does not exist
+    }
+}
+
+// Main pipeline logic
+node {
+    stage('Check Jira Ticket') {
+        def hasJiraTicket = checkJiraTicket()
+        
+        if (hasJiraTicket) {
+            echo "A Jira ticket exists for this service. Aborting the pipeline."
+            currentBuild.result = 'ABORTED'
+            error("Pipeline aborted due to the presence of a Jira ticket.")
+        } else {
+            echo "No Jira ticket found. Proceeding with the pipeline."
+            // Add your pipeline steps here
+        }
+    }
+}
